@@ -1207,6 +1207,20 @@ struct mqtt_client {
     void* reconnect_state;
 
     /**
+     * @brief A pointer to function to call when PUBACK is received
+     * @param packet_id Packet id informing you for which message this
+     *        reply is for.
+     */
+    void (*puback_callback)(uint16_t packet_id);
+
+    /**
+     * @brief A pointer to function to call when PUBACK is received
+     * @param code MQTTConnackReturnCode. Only it equeal to MQTT_CONNACK_ACCEPTED
+     *             the related message can be considered delivered
+     */
+    void (*connack_callback)(enum MQTTConnackReturnCode code);
+
+    /**
      * @brief The buffer where ingress data is temporarily stored.
      */
     struct {
@@ -1465,6 +1479,33 @@ enum MQTTErrors mqtt_connect(struct mqtt_client *client,
 /* 
     todo: will_message should be a void*
 */
+
+/**
+ * @brief Publish an application message.
+ * @ingroup api
+ * 
+ * Publishes an application message to the MQTT broker.
+ * 
+ * @pre mqtt_connect must have been called.
+ * 
+ * @param[in,out] client The MQTT client.
+ * @param[in] topic_name The name of the topic.
+ * @param[in] application_message The data to be published.
+ * @param[in] application_message_size The size of \p application_message in bytes.
+ * @param[in] publish_flags \ref MQTTPublishFlags to be used, namely the QOS level to 
+ *            publish at (MQTT_PUBLISH_QOS_[0,1,2]) or whether or not the broker should 
+ *            retain the publish (MQTT_PUBLISH_RETAIN).
+ * @param[out] packet_id id of the packet which you can use later to pair with PUBACK
+ *             response 
+ * 
+ * @returns \c MQTT_OK upon success, an \ref MQTTErrors otherwise.
+ */
+enum MQTTErrors mqtt_publish_pid(struct mqtt_client *client,
+                                 const char* topic_name,
+                                 const void* application_message,
+                                 size_t application_message_size,
+                                 uint8_t publish_flags,
+                                 uint16_t *packet_id);
 
 /**
  * @brief Publish an application message.

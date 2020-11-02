@@ -259,17 +259,17 @@ enum MQTTErrors mqtt_connect(struct mqtt_client *client,
     return MQTT_OK;
 }
 
-enum MQTTErrors mqtt_publish(struct mqtt_client *client,
+enum MQTTErrors mqtt_publish_pid(struct mqtt_client *client,
                      const char* topic_name,
                      const void* application_message,
                      size_t application_message_size,
-                     uint8_t publish_flags)
+                     uint8_t publish_flags,
+                     uint16_t *packet_id)
 {
     struct mqtt_queued_message *msg;
     ssize_t rv;
-    uint16_t packet_id;
     MQTT_PAL_MUTEX_LOCK(&client->mutex);
-    packet_id = __mqtt_next_pid(client);
+    *packet_id = __mqtt_next_pid(client);
 
 
     /* try to pack the message */
@@ -278,7 +278,7 @@ enum MQTTErrors mqtt_publish(struct mqtt_client *client,
         mqtt_pack_publish_request(
             client->mq.curr, client->mq.curr_sz,
             topic_name,
-            packet_id,
+            *packet_id,
             application_message,
             application_message_size,
             publish_flags
@@ -287,10 +287,27 @@ enum MQTTErrors mqtt_publish(struct mqtt_client *client,
     );
     /* save the control type and packet id of the message */
     msg->control_type = MQTT_CONTROL_PUBLISH;
-    msg->packet_id = packet_id;
+    msg->packet_id = *packet_id;
 
     MQTT_PAL_MUTEX_UNLOCK(&client->mutex);
     return MQTT_OK;
+}
+
+enum MQTTErrors mqtt_publish(struct mqtt_client *client,
+                     const char* topic_name,
+                     const void* application_message,
+                     size_t application_message_size,
+                     uint8_t publish_flags)
+{
+    uint16_t packet_id;
+    return mqtt_publish_pid(
+        client,
+        topic_name,
+        application_message,
+        application_message_size,
+        publish_flags,
+        &packet_id
+    );
 }
 
 ssize_t __mqtt_puback(struct mqtt_client *client, uint16_t packet_id) {
@@ -722,6 +739,9 @@ ssize_t __mqtt_recv(struct mqtt_client *client)
                 msg->state = MQTT_QUEUED_COMPLETE;
                 /* initialize typical response time */
                 client->typical_response_time = (double) (MQTT_PAL_TIME() - msg->time_sent);
+                /* inform application layer in case requested */
+                if (client->connack_callback)
+                    client->connack_callback(response.decoded.connack.return_code);
                 /* check that connection was successful */
                 if (response.decoded.connack.return_code != MQTT_CONNACK_ACCEPTED) {
                     if (response.decoded.connack.return_code == MQTT_CONNACK_REFUSED_IDENTIFIER_REJECTED) {
@@ -768,6 +788,9 @@ ssize_t __mqtt_recv(struct mqtt_client *client)
                     break;
                 }
                 msg->state = MQTT_QUEUED_COMPLETE;
+                /* inform application layer in case requested */
+                if (client->puback_callback)
+                    client->puback_callback(msg->packet_id);
                 /* update response time */
                 client->typical_response_time = 0.875 * (client->typical_response_time) + 0.125 * (double) (MQTT_PAL_TIME() - msg->time_sent);
                 break;
