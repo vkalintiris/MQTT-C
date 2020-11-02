@@ -741,7 +741,7 @@ ssize_t __mqtt_recv(struct mqtt_client *client)
                 client->typical_response_time = (double) (MQTT_PAL_TIME() - msg->time_sent);
                 /* inform application layer in case requested */
                 if (client->connack_callback)
-                    client->connack_callback(response.decoded.connack.return_code);
+                    client->connack_callback(client, response.decoded.connack.return_code);
                 /* check that connection was successful */
                 if (response.decoded.connack.return_code != MQTT_CONNACK_ACCEPTED) {
                     if (response.decoded.connack.return_code == MQTT_CONNACK_REFUSED_IDENTIFIER_REJECTED) {
@@ -790,7 +790,7 @@ ssize_t __mqtt_recv(struct mqtt_client *client)
                 msg->state = MQTT_QUEUED_COMPLETE;
                 /* inform application layer in case requested */
                 if (client->puback_callback)
-                    client->puback_callback(msg->packet_id);
+                    client->puback_callback(client, msg->packet_id);
                 /* update response time */
                 client->typical_response_time = 0.875 * (client->typical_response_time) + 0.125 * (double) (MQTT_PAL_TIME() - msg->time_sent);
                 break;

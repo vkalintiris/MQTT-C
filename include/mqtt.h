@@ -1211,14 +1211,14 @@ struct mqtt_client {
      * @param packet_id Packet id informing you for which message this
      *        reply is for.
      */
-    void (*puback_callback)(uint16_t packet_id);
+    void (*puback_callback)(struct mqtt_client* client, uint16_t packet_id);
 
     /**
      * @brief A pointer to function to call when PUBACK is received
      * @param code MQTTConnackReturnCode. Only it equeal to MQTT_CONNACK_ACCEPTED
      *             the related message can be considered delivered
      */
-    void (*connack_callback)(enum MQTTConnackReturnCode code);
+    void (*connack_callback)(struct mqtt_client* client, enum MQTTConnackReturnCode code);
 
     /**
      * @brief The buffer where ingress data is temporarily stored.
