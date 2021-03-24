@@ -1505,6 +1505,7 @@ ssize_t mqtt_pack_subscribe_request(uint8_t *buf, size_t bufsz, unsigned int pac
 
         ++num_subs;
         if (num_subs >= MQTT_SUBSCRIBE_REQUEST_MAX_NUM_TOPICS) {
+            va_end(args);
             return MQTT_ERROR_SUBSCRIBE_TOO_MANY_TOPICS;
         }
     }
@@ -1583,6 +1584,7 @@ ssize_t mqtt_pack_unsubscribe_request(uint8_t *buf, size_t bufsz, unsigned int p
 
         ++num_subs;
         if (num_subs >= MQTT_UNSUBSCRIBE_REQUEST_MAX_NUM_TOPICS) {
+            va_end(args);
             return MQTT_ERROR_UNSUBSCRIBE_TOO_MANY_TOPICS;
         }
     }
