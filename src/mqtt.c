@@ -1652,6 +1652,38 @@ struct mqtt_queued_message* mqtt_mq_register(struct mqtt_message_queue *mq, size
     return mq->queue_tail;
 }
 
+void mqtt_mq_realloc(struct mqtt_message_queue *mq, size_t newsize, void*(*realloc_fnc)(void*, size_t)) {
+    struct mqtt_queued_message *msg;
+
+    /* realloc can move the data we have to therefore calculate
+       relative offsets instead of absolute pointers */
+    uintptr_t curr_relative = mq->curr - (uint8_t *)mq->mem_start;
+    uintptr_t queue_size = (uint8_t*)mq->mem_end - (uint8_t*)mq->queue_tail;
+    uintptr_t queue_tail_relative =  (uint8_t*)mq->queue_tail - (uint8_t*)mq->mem_start;
+
+    /* convert data pointers to relative pointers (offsets from mem_start) */
+    for(msg = mqtt_mq_get(mq, 0); msg >= mq->queue_tail; --msg) {
+        msg->start = (uint8_t*)(msg->start - (uint8_t*)mq->mem_start);
+    }
+
+    void *new_ptr = realloc_fnc(mq->mem_start, newsize);
+    if (new_ptr) {
+        mq->mem_start = new_ptr;
+        mq->curr = (uint8_t *)mq->mem_start + curr_relative;
+        mq->mem_end = (uint8_t*)mq->mem_start + newsize;
+
+        /* move queue at the end to new end */
+        mq->queue_tail = (struct mqtt_queued_message*)((uint8_t*)mq->mem_end - queue_size);
+        memmove(mq->queue_tail, mq->mem_start + queue_tail_relative, queue_size);
+        mq->curr_sz = mqtt_mq_currsz(mq);
+    }
+
+    /* relative offsets back to pointers */
+    for(msg = mqtt_mq_get(mq, 0); msg >= mq->queue_tail; --msg) {
+        msg->start = (uint8_t*)mq->mem_start + (uintptr_t)msg->start;
+    }
+}
+
 void mqtt_mq_clean(struct mqtt_message_queue *mq) {
     struct mqtt_queued_message *new_head;
 
