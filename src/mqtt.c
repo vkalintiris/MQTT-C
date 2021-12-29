@@ -1652,7 +1652,7 @@ struct mqtt_queued_message* mqtt_mq_register(struct mqtt_message_queue *mq, size
     return mq->queue_tail;
 }
 
-void mqtt_mq_realloc(struct mqtt_message_queue *mq, size_t newsize, void*(*realloc_fnc)(void*, size_t)) {
+void *mqtt_mq_realloc(struct mqtt_message_queue *mq, size_t newsize, void*(*realloc_fnc)(void*, size_t)) {
     struct mqtt_queued_message *msg;
 
     /* realloc can move the data we have to therefore calculate
@@ -1682,6 +1682,8 @@ void mqtt_mq_realloc(struct mqtt_message_queue *mq, size_t newsize, void*(*reall
     for(msg = mqtt_mq_get(mq, 0); msg >= mq->queue_tail; --msg) {
         msg->start = (uint8_t*)mq->mem_start + (uintptr_t)msg->start;
     }
+
+    return new_ptr;
 }
 
 void mqtt_mq_clean(struct mqtt_message_queue *mq) {

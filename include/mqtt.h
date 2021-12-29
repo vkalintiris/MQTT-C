@@ -1015,7 +1015,7 @@ struct mqtt_message_queue {
  */
 void mqtt_mq_init(struct mqtt_message_queue *mq, void *buf, size_t bufsz);
 
-void mqtt_mq_realloc(struct mqtt_message_queue *mq, size_t newsize, void*(*realloc_fnc)(void*, size_t));
+void *mqtt_mq_realloc(struct mqtt_message_queue *mq, size_t newsize, void*(*realloc_fnc)(void*, size_t));
 
 /**
  * @brief Clear as many messages from the front of the queue as possible.
