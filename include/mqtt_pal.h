@@ -70,6 +70,7 @@ extern "C" {
 
 /* UNIX-like platform support */
 #if defined(__unix__) || defined(__APPLE__)
+    #include <stdint.h>
     #include <limits.h>
     #include <string.h>
     #include <stdarg.h>
